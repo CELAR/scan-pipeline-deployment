@@ -3,7 +3,11 @@
 
 apt-get clean
 apt-get update
-apt-get -y install nfs-common portmap
+apt-get -y install cifs-utils
+
+#
+#install samba client
+#apt-get -y install nfs-common portmap
 #
 # update system
 #
@@ -17,7 +21,8 @@ while [ $RDY1 != "1" ]; do
     sleep 1
     RDY1=`ss-get scheduler.1:nfs_ready`
 done
-mount -t nfs `ss-get --timeout 480 scheduler.1:hostname`:/mnt/nfs /mnt/nfs
+
+mount -t cifs //`ss-get --timeout 480 scheduler.1:hostname`/share /mnt/nfs -o username=guest,password=''
 
 apt-get -y install default-jre git python
 

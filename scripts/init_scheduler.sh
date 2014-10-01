@@ -1,28 +1,41 @@
 #!/bin/bash -x
 
-# Install NFS server
+#
+# Install SAMBA server
+#
 apt-get clean
 apt-get update
-apt-get -y install nfs-kernel-server portmap
+
+apt-get -y install samba
+#apt-get -y install nfs-kernel-server portmap
 #
 # update system
 #
 apt-get -o DPkg::options::="--force-confdef" -o DPkg::options::="--force-confold" -y upgrade
-mkdir /mnt/nfs
+
+
+
+sed 's/WORKGROUP/SCAN/' < /etc/samba/smb.conf > /tmp/smb.conf ; mv -f /tmp/smb.conf /etc/samba/smb.conf
+echo 'security = share' >> /etc/samba/smb.conf
+echo '[share]' >> /etc/samba/smb.conf
+echo '   comment = Ubuntu File Server Share' >> /etc/samba/smb.conf
+echo '   path = /mnt/nfs' >> /etc/samba/smb.conf
+echo '   public = yes' >> /etc/samba/smb.conf
+echo '   guest ok = yes' >> /etc/samba/smb.conf
+echo '   guest only = yes' >> /etc/samba/smb.conf
+echo '   guest account = nobody' >> /etc/samba/smb.conf
+echo '   browsable = yes' >> /etc/samba/smb.conf
+echo '   read only = no' >> /etc/samba/smb.conf
+
+mkdir -p /mnt/nfs
 chown nobody:nogroup /mnt/nfs
 
+restart smbd
+restart nmbd
 
-#
-# enable NFS mount
-#
-for (( i=1; i <= `ss-get worker:multiplicity`; i++ )); do
-  worker_ip=`ss-get --timeout 480 worker.$i:hostname`
-  echo "/mnt/nfs     $worker_ip(rw,sync,no_subtree_check)" >> /etc/exports
-done
+#create a test.file
+touch /mnt/nfs/test.file
 
-exportfs -ra
-service portmap restart
-service nfs-kernel-server restart
 ss-set scheduler.1:nfs_ready 1
 
 apt-get -y install python python-pip python-dev git
